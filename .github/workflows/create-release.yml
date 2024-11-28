@@ -3,15 +3,15 @@ name: Crear rama release, tag, y fusionar a main
 on:
   push:
     branches:
-      - develop  # El pipeline se ejecuta cuando hay un push a develop
+      - develop
     paths:
-      - 'package.json'  # Solo se ejecuta si hay cambios en el archivo package.json
+      - 'package.json'
 
 jobs:
   create-release-branch:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Necesario para crear ramas y escribir cambios
+      contents: write
 
     steps:
       - name: Clonar el repositorio
@@ -20,65 +20,61 @@ jobs:
       - name: Leer la versión desde package.json
         id: get-version
         run: |
-          # Leer la versión del package.json
           VERSION=$(node -p "require('./package.json').version")
           echo "La versión actual del package.json es: $VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-          # Guardar la versión en una variable para el siguiente paso
-          echo "release_name=release/$VERSION" >> $GITHUB_ENV
-
-      - name: Verificar si la versión cambió
+      - name: Verificar y crear la rama si no existe
         run: |
-          if [[ -z "${{ env.release_name }}" ]]; then
-            echo "No se ha encontrado un cambio en la versión. El pipeline no hará nada."
-            exit 0
+          git fetch origin
+          if git show-ref --verify --quiet refs/heads/$release_name || git ls-remote --exit-code --heads origin $release_name; then
+            echo "La rama $release_name ya existe. No se creará una nueva."
+          else
+            git checkout develop
+            git checkout -b $release_name
+            git push -u origin $release_name
           fi
-        continue-on-error: true
-
-      - name: Crear y subir la rama release/*
-        run: |
-          # Fetch para asegurarse de que se tiene la información más reciente de develop
-          git fetch origin develop
-          
-          # Cambiar a develop y crear la nueva rama release
-          git checkout develop
-          git checkout -b $release_name
-
-          # Subir la nueva rama al remoto
-          git push origin $release_name
 
       - name: Crear el tag y asociarlo con el release
         run: |
-          # Crear el tag con el nombre de la versión
-          git tag $VERSION
-
-          # Subir el tag al remoto
+          echo "Branch actual: $release_name"
+          echo "Versión: $VERSION"
+        
+          # Asegurarse de estar en la rama correcta
+          git fetch origin $release_name
+          git checkout $release_name
+        
+          # Depurar tags locales
+          echo "Tags locales antes de crear el nuevo tag:"
+          git tag
+        
+          # Verificar y crear el tag si no existe
+          if git tag -l | grep -q "^$VERSION$"; then
+            echo "El tag $VERSION ya existe. No se creará un nuevo tag."
+          else
+            git tag $VERSION
+            echo "Tag $VERSION creado localmente."
+          fi
+        
+          # Empujar el tag al remoto
           git push origin $VERSION
 
       - name: Crear el Release en GitHub
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            path/to/your/files/*.tar.gz  # Opcional: incluir archivos que quieras asociar con el release
+          tag_name: ${{ env.VERSION }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN}}
 
       - name: Fusionar la rama release/* a main
         run: |
-          # Fetch para obtener la última información de main
           git fetch origin main
-          
-          # Cambiar a la rama main
           git checkout main
-          
-          # Fusionar la rama release/* a main
           git merge $release_name --no-ff -m "Fusionando la rama $release_name a main"
-          
-          # Subir la fusión a main
           git push origin main
 
       - name: Notificar la creación de la rama y el tag
         run: |
-          echo "La rama $release_name fue creada exitosamente desde develop."
-          echo "El tag $VERSION ha sido creado y subido."
-          echo "La rama $release_name ha sido fusionada a main."
+          echo "La rama $release_name fue procesada exitosamente."
+          echo "El tag $VERSION fue creado y subido."
+          echo "La rama $release_name fue fusionada con main."
