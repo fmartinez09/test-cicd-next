@@ -37,6 +37,13 @@ jobs:
             git push -u origin ${{ env.RELEASE_NAME }}
           fi
 
+      - name: Actualizar la rama release con los últimos cambios de develop
+        run: |
+          git fetch origin
+          git checkout ${{ env.RELEASE_NAME }}
+          git merge origin/develop --no-ff -m "Fusionando develop en la rama release/$VERSION"
+          git push origin ${{ env.RELEASE_NAME }}
+
       - name: Crear el tag y asociarlo con el release
         run: |
           echo "Branch actual: ${{ env.RELEASE_NAME }}"
