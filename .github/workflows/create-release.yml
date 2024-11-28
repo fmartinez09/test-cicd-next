@@ -22,7 +22,7 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo "La versión actual del package.json es: $VERSION"
-          echo "release_name=release/$VERSION" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Verificar y crear la rama si no existe
         run: |
