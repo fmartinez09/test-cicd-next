@@ -52,7 +52,7 @@ jobs:
           files: |
             path/to/your/files/*.tar.gz
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN}}
 
       - name: Fusionar la rama release/* a main
         run: |
