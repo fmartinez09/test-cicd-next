@@ -35,6 +35,17 @@ jobs:
           fi
         continue-on-error: true
 
+      - name: Verificar y crear la rama si no existe
+        run: |
+          git fetch origin
+          if git rev-parse --verify origin/$release_name > /dev/null 2>&1; then
+            echo "La rama $release_name ya existe en el remoto."
+          else
+            git checkout develop
+            git checkout -b $release_name
+            git push -u origin $release_name
+          fi
+      
       - name: Crear y subir la rama release/*
         run: |
           # Fetch para asegurarse de que se tiene la información más reciente de develop
