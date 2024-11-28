@@ -1,4 +1,4 @@
-name: Crear rama release automática basada en versión de package.json
+name: Crear rama release automática y tag basado en versión de package.json
 
 on:
   push:
@@ -42,5 +42,21 @@ jobs:
           git checkout -b $release_name origin/develop
           git push origin $release_name
 
-      - name: Notificar la creación de la rama
-        run: echo "La rama $release_name fue creada exitosamente desde develop."
+      - name: Crear el tag y asociarlo con el release
+        run: |
+          # Crear un tag con el nombre de la versión
+          git tag $VERSION
+          git push origin $VERSION
+
+      - name: Crear el Release en GitHub
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            path/to/your/files/*.tar.gz  # Opcional: incluir archivos que quieras asociar con el release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notificar la creación de la rama y el tag
+        run: |
+          echo "La rama $release_name fue creada exitosamente desde develop."
+          echo "El tag $VERSION ha sido creado y subido."
