@@ -44,13 +44,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
 
-      - name: Fusionar la rama release/* a main
-        run: |
-          git fetch origin main
-          git checkout main
-          git merge ${{ env.RELEASE_NAME }} --no-ff --allow-unrelated-histories -m "Fusionando la rama ${{ env.RELEASE_NAME }} a main"
-          git push origin main
-
       - name: Notificar la creación de la rama y el tag
         run: |
           echo "La rama ${{ env.RELEASE_NAME }} fue procesada exitosamente."
