@@ -32,13 +32,16 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const { github, context } = require("@actions/github");
             const pullRequest = context.payload.pull_request;
 
-            // Comenta en el PR para notificar que pasó todas las validaciones
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pullRequest.number,
-              body: "✅ El PR ha pasado todas las validaciones y está listo para revisión manual y fusión.",
-            });
+            if (pullRequest) {
+              // Comenta en el PR para notificar que pasó todas las validaciones
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pullRequest.number,
+                body: "✅ El PR ha pasado todas las validaciones y está listo para revisión manual y fusión.",
+              });
+            } else {
+              console.log("No se encontró un pull request en el contexto.");
+            }
