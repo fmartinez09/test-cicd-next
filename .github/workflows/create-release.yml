@@ -61,6 +61,8 @@ jobs:
 
       - name: Crear el Release en GitHub
         uses: softprops/action-gh-release@v1
+        with:
+          tag_name: $VERSION
         env:
           GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN}}
 
