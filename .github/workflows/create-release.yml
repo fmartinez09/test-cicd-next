@@ -1,0 +1,46 @@
+name: Crear rama release automática basada en versión de package.json
+
+on:
+  push:
+    branches:
+      - develop  # El pipeline se ejecuta solo cuando hay un push a develop
+    paths:
+      - 'package.json'  # Solo se ejecuta si hay cambios en el archivo package.json
+
+jobs:
+  create-release-branch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Necesario para crear ramas y escribir cambios
+
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v3
+
+      - name: Leer la versión desde package.json
+        id: get-version
+        run: |
+          # Leer la versión del package.json
+          VERSION=$(node -p "require('./package.json').version")
+          echo "La versión actual del package.json es: $VERSION"
+
+          # Guardar la versión en una variable para el siguiente paso
+          echo "release_name=release/$VERSION" >> $GITHUB_ENV
+
+      - name: Verificar si la versión cambió
+        run: |
+          if [[ -z "${{ env.release_name }}" ]]; then
+            echo "No se ha encontrado un cambio en la versión. El pipeline no hará nada."
+            exit 0
+          fi
+        continue-on-error: true
+
+      - name: Crear y subir la rama release/*
+        run: |
+          # Usar el nombre calculado para la nueva rama
+          git fetch origin develop
+          git checkout -b $release_name origin/develop
+          git push origin $release_name
+
+      - name: Notificar la creación de la rama
+        run: echo "La rama $release_name fue creada exitosamente desde develop."
