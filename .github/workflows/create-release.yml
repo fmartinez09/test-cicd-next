@@ -1,0 +1,77 @@
+name: Crear rama release, tag, y fusionar a main
+
+on:
+  push:
+    branches:
+      - develop  # El pipeline se ejecuta cuando hay un push a develop
+    paths:
+      - 'package.json'  # Solo se ejecuta si hay cambios en el archivo package.json
+
+jobs:
+  create-release-branch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Necesario para crear ramas y escribir cambios
+
+    steps:
+      - name: Clonar el repositorio
+        uses: actions/checkout@v3
+
+      - name: Leer la versión desde package.json
+        id: get-version
+        run: |
+          # Leer la versión del package.json
+          VERSION=$(node -p "require('./package.json').version")
+          echo "La versión actual del package.json es: $VERSION"
+
+          # Guardar la versión en una variable para el siguiente paso
+          echo "release_name=release/$VERSION" >> $GITHUB_ENV
+
+      - name: Verificar si la versión cambió
+        run: |
+          if [[ -z "${{ env.release_name }}" ]]; then
+            echo "No se ha encontrado un cambio en la versión. El pipeline no hará nada."
+            exit 0
+          fi
+        continue-on-error: true
+
+      - name: Crear y subir la rama release/*
+        run: |
+          # Usar el nombre calculado para la nueva rama
+          git fetch origin develop
+          git checkout -b $release_name origin/develop
+          git push origin $release_name
+
+      - name: Crear el tag y asociarlo con el release
+        run: |
+          # Crear un tag con el nombre de la versión
+          git tag $VERSION
+          git push origin $VERSION
+
+      - name: Crear el Release en GitHub
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            path/to/your/files/*.tar.gz  # Opcional: incluir archivos que quieras asociar con el release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fusionar la rama release/* a main
+        run: |
+          # Hacer fetch de la rama main
+          git fetch origin main
+          
+          # Cambiar a la rama main
+          git checkout main
+          
+          # Fusionar la rama release/* con main
+          git merge $release_name --no-ff -m "Fusionando la rama $release_name a main"
+          
+          # Subir la fusión a main
+          git push origin main
+
+      - name: Notificar la creación de la rama y el tag
+        run: |
+          echo "La rama $release_name fue creada exitosamente desde develop."
+          echo "El tag $VERSION ha sido creado y subido."
+          echo "La rama $release_name ha sido fusionada a main."
