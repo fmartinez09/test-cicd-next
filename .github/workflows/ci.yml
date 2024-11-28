@@ -1,0 +1,44 @@
+name: Feature Branch Validation
+
+on:
+  pull_request:
+    branches:
+      - develop  # Se ejecuta solo cuando se abre un PR hacia develop
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      # Paso 1: Descargar el código del PR
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Paso 2: Configurar Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'  # Ajustar según la versión que uses
+
+      # Paso 3: Instalar dependencias
+      - name: Install dependencies
+        run: npm install
+
+      # Paso 4: Compilar el proyecto
+      - name: Build the project
+        run: npm run build
+
+      # Paso 5: Notificar que el PR está listo para revisión
+      - name: Notify PR Ready
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { github, context } = require("@actions/github");
+            const pullRequest = context.payload.pull_request;
+
+            // Comenta en el PR para notificar que pasó todas las validaciones
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pullRequest.number,
+              body: "✅ El PR ha pasado todas las validaciones y está listo para revisión manual y fusión.",
+            });
