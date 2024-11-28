@@ -23,40 +23,35 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           echo "La versión actual del package.json es: $VERSION"
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+          release_name="release/$VERSION"
+          echo "RELEASE_NAME=$release_name" >> $GITHUB_ENV
 
-      - name: Verificar y crear la rama si no existe
+      - name: Verificar y crear la rama release si no existe
         run: |
           git fetch origin
-          if git show-ref --verify --quiet refs/heads/$release_name || git ls-remote --exit-code --heads origin $release_name; then
-            echo "La rama $release_name ya existe. No se creará una nueva."
+          if git show-ref --verify --quiet refs/heads/${{ env.RELEASE_NAME }} || git ls-remote --exit-code --heads origin ${{ env.RELEASE_NAME }}; then
+            echo "La rama ${{ env.RELEASE_NAME }} ya existe. No se creará una nueva."
           else
             git checkout develop
-            git checkout -b $release_name
-            git push -u origin $release_name
+            git checkout -b ${{ env.RELEASE_NAME }}
+            git push -u origin ${{ env.RELEASE_NAME }}
           fi
 
       - name: Crear el tag y asociarlo con el release
         run: |
-          echo "Branch actual: $release_name"
+          echo "Branch actual: ${{ env.RELEASE_NAME }}"
           echo "Versión: $VERSION"
-        
-          # Asegurarse de estar en la rama correcta
-          git fetch origin $release_name
-          git checkout $release_name
-        
-          # Depurar tags locales
-          echo "Tags locales antes de crear el nuevo tag:"
-          git tag
-        
-          # Verificar y crear el tag si no existe
+          
+          git fetch origin ${{ env.RELEASE_NAME }}
+          git checkout ${{ env.RELEASE_NAME }}
+          
           if git tag -l | grep -q "^$VERSION$"; then
             echo "El tag $VERSION ya existe. No se creará un nuevo tag."
           else
             git tag $VERSION
             echo "Tag $VERSION creado localmente."
           fi
-        
-          # Empujar el tag al remoto
+          
           git push origin $VERSION
 
       - name: Crear el Release en GitHub
@@ -64,17 +59,17 @@ jobs:
         with:
           tag_name: ${{ env.VERSION }}
         env:
-          GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN}}
+          GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
 
       - name: Fusionar la rama release/* a main
         run: |
           git fetch origin main
           git checkout main
-          git merge $release_name --no-ff -m "Fusionando la rama $release_name a main"
+          git merge ${{ env.RELEASE_NAME }} --no-ff -m "Fusionando la rama ${{ env.RELEASE_NAME }} a main"
           git push origin main
 
       - name: Notificar la creación de la rama y el tag
         run: |
-          echo "La rama $release_name fue procesada exitosamente."
+          echo "La rama ${{ env.RELEASE_NAME }} fue procesada exitosamente."
           echo "El tag $VERSION fue creado y subido."
-          echo "La rama $release_name fue fusionada con main."
+          echo "La rama ${{ env.RELEASE_NAME }} fue fusionada con main."
