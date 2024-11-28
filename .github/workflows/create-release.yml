@@ -35,30 +35,6 @@ jobs:
             git push -u origin $release_name
           fi
 
-      - name: Crear el tag y asociarlo con el release
-        run: |
-          echo "Branch actual: $release_name"
-          echo "Versión: $VERSION"
-        
-          # Asegurarse de estar en la rama correcta
-          git fetch origin $release_name
-          git checkout $release_name
-        
-          # Depurar tags locales
-          echo "Tags locales antes de crear el nuevo tag:"
-          git tag
-        
-          # Verificar y crear el tag si no existe
-          if git tag -l | grep -q "^$VERSION$"; then
-            echo "El tag $VERSION ya existe. No se creará un nuevo tag."
-          else
-            git tag $VERSION
-            echo "Tag $VERSION creado localmente."
-          fi
-        
-          # Empujar el tag al remoto
-          git push origin $VERSION
-
       - name: Crear el Release en GitHub
         uses: softprops/action-gh-release@v1
         with:
