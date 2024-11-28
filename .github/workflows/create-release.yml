@@ -1,9 +1,9 @@
-name: Crear rama release automática y tag basado en versión de package.json
+name: Crear rama release, tag, y fusionar a main
 
 on:
   push:
     branches:
-      - develop  # El pipeline se ejecuta solo cuando hay un push a develop
+      - develop  # El pipeline se ejecuta cuando hay un push a develop
     paths:
       - 'package.json'  # Solo se ejecuta si hay cambios en el archivo package.json
 
@@ -56,7 +56,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Fusionar la rama release/* a main
+        run: |
+          # Hacer fetch de la rama main
+          git fetch origin main
+          
+          # Cambiar a la rama main
+          git checkout main
+          
+          # Fusionar la rama release/* con main
+          git merge $release_name --no-ff -m "Fusionando la rama $release_name a main"
+          
+          # Subir la fusión a main
+          git push origin main
+
       - name: Notificar la creación de la rama y el tag
         run: |
           echo "La rama $release_name fue creada exitosamente desde develop."
           echo "El tag $VERSION ha sido creado y subido."
+          echo "La rama $release_name ha sido fusionada a main."
