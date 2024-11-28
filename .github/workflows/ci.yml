@@ -26,22 +26,3 @@ jobs:
       # Paso 4: Compilar el proyecto
       - name: Build the project
         run: npm run build
-
-      # Paso 5: Notificar que el PR está listo para revisión
-      - name: Notify PR Ready
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const pullRequest = context.payload.pull_request;
-
-            if (pullRequest) {
-              // Comenta en el PR para notificar que pasó todas las validaciones
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: pullRequest.number,
-                body: "✅ El PR ha pasado todas las validaciones y está listo para revisión manual y fusión.",
-              });
-            } else {
-              console.log("No se encontró un pull request en el contexto.");
-            }
